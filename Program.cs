@@ -18,8 +18,21 @@ namespace DuaDOS
                 BucketName = "packages",
             });
 
+
+            if (!int.TryParse(args[1], out var numberOfDays))
+            {
+                Console.WriteLine($"Could not parse {args[1]} to an int.");
+                return;
+            }
+
+            if (numberOfDays < 30)
+            {
+                Console.WriteLine("Minimum number of days = 30");
+                return;
+            }
+
             var mongoFilter =
-                     Builders<GridFSFileInfo<ObjectId>>.Filter.Lt(x => x.UploadDateTime, DateTime.UtcNow.AddDays(-Math.Abs(int.Parse(args[1]))));
+                     Builders<GridFSFileInfo<ObjectId>>.Filter.Lt(x => x.UploadDateTime, DateTime.UtcNow.AddDays(-numberOfDays));
 
             var options = new GridFSFindOptions
             {
@@ -29,7 +42,7 @@ namespace DuaDOS
             var batchnum = 0;
             var numFiles = 0;
 
-            using (var cursor = await bucket.FindAsync(mongoFilter,options))
+            using (var cursor = await bucket.FindAsync(mongoFilter, options))
             {
                 while (await cursor.MoveNextAsync())
                 {
@@ -39,7 +52,7 @@ namespace DuaDOS
                     foreach (var item in batch)
                     {
                         numFiles++;
-                      await bucket.DeleteAsync(item.Id);
+                        await bucket.DeleteAsync(item.Id);
                     }
                 }
             }
